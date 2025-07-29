@@ -15,6 +15,8 @@ const DeviceWrapper = vk.DeviceWrapper;
 const Instance = vk.InstanceProxy;
 const Device = vk.DeviceProxy;
 
+const DEFAULT_FENCE_TIMEOUT: u64 = 1_000_000_000; // 1 second
+
 pub const GraphicsContext = struct {
     pub const CommandBuffer = vk.CommandBufferProxy;
 
@@ -30,7 +32,9 @@ pub const GraphicsContext = struct {
 
     dev: Device,
     graphics_queue: Queue,
+    compute_queue: Queue,
     present_queue: Queue,
+    depth_format: vk.Format,
 
     pub fn init(allocator: Allocator, app_name: [*:0]const u8, window: *glfw.Window) !GraphicsContext {
         var self: GraphicsContext = undefined;
@@ -54,7 +58,7 @@ pub const GraphicsContext = struct {
                 .application_version = @bitCast(vk.makeApiVersion(0, 0, 0, 0)),
                 .p_engine_name = app_name,
                 .engine_version = @bitCast(vk.makeApiVersion(0, 0, 0, 0)),
-                .api_version = @bitCast(vk.API_VERSION_1_3),
+                .api_version = @bitCast(vk.API_VERSION_1_2),
             },
             .enabled_extension_count = @intCast(extension_names.items.len),
             .pp_enabled_extension_names = extension_names.items.ptr,
@@ -85,9 +89,11 @@ pub const GraphicsContext = struct {
         errdefer self.dev.destroyDevice(null);
 
         self.graphics_queue = Queue.init(self.dev, candidate.queues.graphics_family);
+        self.compute_queue = Queue.init(self.dev, candidate.queues.compute_family);
         self.present_queue = Queue.init(self.dev, candidate.queues.present_family);
 
         self.mem_props = self.instance.getPhysicalDeviceMemoryProperties(self.pdev);
+        try self.getSupportedDepthFormat();
 
         return self;
     }
@@ -121,6 +127,54 @@ pub const GraphicsContext = struct {
             .allocation_size = requirements.size,
             .memory_type_index = try self.findMemoryTypeIndex(requirements.memory_type_bits, flags),
         }, null);
+    }
+
+    pub fn flushCommandBuffer(
+        self: *const GraphicsContext,
+        cmd: vk.CommandBuffer,
+        queue: Queue,
+        pool: vk.CommandPool,
+        free: bool,
+    ) !void {
+        try self.dev.endCommandBuffer(cmd);
+
+        const submit_info = vk.SubmitInfo{
+            .command_buffer_count = 1,
+            .p_command_buffers = @ptrCast(&cmd),
+        };
+
+        const fence = try self.dev.createFence(&.{}, null);
+        defer self.dev.destroyFence(fence, null);
+
+        try self.dev.queueSubmit(queue.handle, 1, @ptrCast(&submit_info), fence);
+
+        _ = try self.dev.waitForFences(1, @ptrCast(&fence), 1, DEFAULT_FENCE_TIMEOUT);
+
+        if (free) {
+            self.dev.freeCommandBuffers(pool, 1, @ptrCast(&cmd));
+        }
+    }
+
+    fn getSupportedDepthFormat(self: *GraphicsContext) !void {
+        const depth_formats = [_]vk.Format{
+            .d32_sfloat_s8_uint,
+            //.d32_sfloat,
+            .d24_unorm_s8_uint,
+            .d16_unorm_s8_uint,
+            //.d16_unorm,
+        };
+
+        for (depth_formats) |format| {
+            if (self.instance.getPhysicalDeviceFormatProperties(
+                self.pdev,
+                format,
+            ).optimal_tiling_features.contains(.{ .depth_stencil_attachment_bit = true })) {
+                self.depth_format = format;
+                return;
+            }
+        }
+
+        return error.NoSupportedDepthFormat;
     }
 };
 
@@ -181,6 +235,7 @@ const DeviceCandidate = struct {
 
 const QueueAllocation = struct {
     graphics_family: u32,
+    compute_family: u32,
     present_family: u32,
 };
 
@@ -232,6 +287,7 @@ fn allocateQueues(instance: Instance, pdev: vk.PhysicalDevice, allocator: Alloca
     defer allocator.free(families);
 
     var graphics_family: ?u32 = null;
+    var compute_family: ?u32 = null;
     var present_family: ?u32 = null;
 
     for (families, 0..) |properties, i| {
@@ -241,14 +297,22 @@ fn allocateQueues(instance: Instance, pdev: vk.PhysicalDevice, allocator: Alloca
             graphics_family = family;
         }
 
+        if (compute_family == null and properties.queue_flags.contains(.{
+            .compute_bit = true,
+            .graphics_bit = false,
+        })) {
+            compute_family = family;
+        }
+
         if (present_family == null and (try instance.getPhysicalDeviceSurfaceSupportKHR(pdev, family, surface)) == vk.TRUE) {
             present_family = family;
         }
     }
 
-    if (graphics_family != null and present_family != null) {
+    if (graphics_family != null and compute_family != null and present_family != null) {
         return QueueAllocation{
             .graphics_family = graphics_family.?,
+            .compute_family = compute_family.?,
             .present_family = present_family.?,
         };
     }

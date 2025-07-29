@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const vkgen = @import("vulkan");
 
 pub fn build(b: *std.Build) void {
@@ -30,15 +31,18 @@ pub fn build(b: *std.Build) void {
         .registry = b.path("registry/vk.xml"),
     });
     exe.root_module.addImport("vulkan", vulkan.module("vulkan-zig"));
-    exe.addLibraryPath(.{ .cwd_relative = "/usr/local/lib" });
-    //exe.linkSystemLibrary("vulkan.1.3.290");
-    //exe.linkSystemLibrary("vulkan");
+    if (builtin.target.os.tag == .macos) {
+        exe.addLibraryPath(.{ .cwd_relative = "/usr/local/lib" });
+    } else if (builtin.target.os.tag == .windows) {
+        exe.addLibraryPath(.{ .cwd_relative = "C:/glfw/lib-vc2022/" });
+        //exe.addLibraryPath(.{ .cwd_relative = "C:/Vulkan/vulkan-sdk/lib" });
+    }
 
     b.installArtifact(exe);
 
     const vert_cmd = b.addSystemCommand(&.{
         "glslc",
-        "--target-env=vulkan1.3",
+        "--target-env=vulkan1.2",
         "-fshader-stage=vertex",
         "-o",
     });
@@ -50,7 +54,7 @@ pub fn build(b: *std.Build) void {
 
     const frag_cmd = b.addSystemCommand(&.{
         "glslc",
-        "--target-env=vulkan1.3",
+        "--target-env=vulkan1.2",
         "-fshader-stage=fragment",
         "-o",
     });
@@ -58,6 +62,18 @@ pub fn build(b: *std.Build) void {
     frag_cmd.addFileArg(b.path("src/shaders/frag.glsl"));
     exe.root_module.addAnonymousImport("fragment_shader", .{
         .root_source_file = frag_spv,
+    });
+
+    const comp_cmd = b.addSystemCommand(&.{
+        "glslc",
+        "--target-env=vulkan1.2",
+        "-fshader-stage=compute",
+        "-o",
+    });
+    const comp_spv = comp_cmd.addOutputFileArg("comp.spv");
+    comp_cmd.addFileArg(b.path("src/shaders/comp.glsl"));
+    exe.root_module.addAnonymousImport("compute_shader", .{
+        .root_source_file = comp_spv,
     });
 
     const run_cmd = b.addRunArtifact(exe);
