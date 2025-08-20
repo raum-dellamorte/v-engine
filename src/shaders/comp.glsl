@@ -8,26 +8,23 @@ layout (binding = 1) uniform UBO {
 	vec4 color;
 } ubo;
 
-struct SceneObject
-{
-	vec4 objectProperties;
-	vec3 diffuse;
-	float specular;
-	int id;
-	int objectType;
+struct StorageBufferObject {
+	vec2 limits;
 };
 
-layout (std140, binding = 2) buffer SceneObjects
-{
-	SceneObject sceneObjects[ ];
+layout (std140, binding = 2) buffer StorageBuffer {
+	StorageBufferObject storageBuffer[ ];
 };
 
-void main()
-{
+void main() {
 	ivec2 dim = imageSize(resultImage);
 	vec2 uv = vec2(gl_GlobalInvocationID.xy) / dim;
 
-    vec4 color = vec4(uv.x, uv.y, 0, 1);
+    vec4 color = vec4(0);
+    if (gl_GlobalInvocationID.x > storageBuffer[0].limits.x &&
+            gl_GlobalInvocationID.y > storageBuffer[0].limits.y) {
+        color = vec4(uv.x, uv.y, 0, 1);
+    }
 			
 	imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), color);
 }

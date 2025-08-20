@@ -10,7 +10,7 @@ const Buffer = @import("buffer.zig").Buffer;
 const ComputePipeline = @import("compute_pipeline.zig").ComputePipeline;
 const GraphicsPipeline = @import("graphics_pipeline.zig").GraphicsPipeline;
 
-const APP_NAME = "HexaVox";
+const APP_NAME = "V-Engine";
 const WIDTH = 1080;
 const HEIGHT = 720;
 
@@ -133,16 +133,45 @@ pub const App = struct {
     fn resize(self: *App) !void {
         self.updateExtent();
 
+        while (self.extent.width == 0 or self.extent.height == 0) {
+            self.updateExtent();
+            glfw.waitEvents();
+        }
+
         try self.gc.dev.deviceWaitIdle();
+        try self.gc.dev.queueWaitIdle(self.gc.graphics_queue.handle);
+        try self.gc.dev.queueWaitIdle(self.gc.compute_queue.handle);
+
         try self.swapchain.recreate(self.extent);
 
         self.depth_stencil.deinit(&self.gc);
         self.depth_stencil = try DepthStencil.init(&self.gc, self.extent);
 
-        try self.graphics_pipeline.resize(
+        self.storage_image.deinit(&self.gc);
+        self.storage_image = try StorageImage.init(&self.gc, self.extent, self.command_pool);
+
+        self.graphics_pipeline.deinit(&self.gc);
+        self.compute_pipeline.deinit(&self.gc);
+
+        self.gc.dev.destroyDescriptorPool(self.descriptor_pool, null);
+        try self.setupDescriptorPool();
+
+        self.compute_pipeline = try ComputePipeline.init(
+            &self.gc,
+            self.extent,
+            self.descriptor_pool,
+            self.storage_image,
+            self.storage_buffer,
+            self.uniform_buffer,
+        );
+
+        self.graphics_pipeline = try GraphicsPipeline.init(
             &self.gc,
             self.swapchain.swap_images.len,
+            self.allocator,
             self.swapchain,
+            self.command_pool,
+            self.descriptor_pool,
             self.storage_image,
             self.depth_stencil,
         );

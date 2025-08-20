@@ -102,7 +102,7 @@ pub const Buffer = struct {
     }
 
     pub fn prepareStorageBuffer(gc: *const GraphicsContext) !Self {
-        var data: [3]f32 = .{ 1.0, 2.0, 3.0 };
+        var data: [2]f32 = .{ 0.0, 0.0 };
         const storage_buffer_size = data.len * @sizeOf(f32);
 
         return Buffer.init(

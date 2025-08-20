@@ -13,6 +13,7 @@ pub const GraphicsPipeline = struct {
     handle: vk.Pipeline,
     pipeline_layout: vk.PipelineLayout,
     descriptor_set: vk.DescriptorSet,
+    descriptor_set_layout: vk.DescriptorSetLayout,
 
     command_pool: vk.CommandPool,
     command_buffers: []vk.CommandBuffer,
@@ -87,6 +88,25 @@ pub const GraphicsPipeline = struct {
         );
         self.allocator.free(self.command_buffers);
         try self.buildCommandBuffers(gc, len, swapchain.extent, storage_image);
+
+        const descriptor_writes = [_]vk.WriteDescriptorSet{
+            .{
+                .dst_set = self.descriptor_set,
+                .dst_binding = 0,
+                .dst_array_element = 0,
+                .descriptor_count = 1,
+                .descriptor_type = .combined_image_sampler,
+                .p_image_info = @ptrCast(&storage_image.descriptor),
+                .p_buffer_info = @ptrCast(&[_]vk.DescriptorBufferInfo{}),
+                .p_texel_buffer_view = @ptrCast(&[_]vk.BufferView{}),
+            },
+        };
+        gc.dev.updateDescriptorSets(
+            @intCast(descriptor_writes.len),
+            @ptrCast(&descriptor_writes),
+            0,
+            null,
+        );
 
         for (self.wait_fences) |fence| gc.dev.destroyFence(fence, null);
         self.allocator.free(self.wait_fences);
@@ -368,13 +388,12 @@ pub const GraphicsPipeline = struct {
             .p_bindings = @ptrCast(&set_layout_bidings),
         };
 
-        const descriptor_set_layout = try gc.dev.createDescriptorSetLayout(&descriptor_layout, null);
-        defer gc.dev.destroyDescriptorSetLayout(descriptor_set_layout, null);
+        self.descriptor_set_layout = try gc.dev.createDescriptorSetLayout(&descriptor_layout, null);
 
         const alloc_info = vk.DescriptorSetAllocateInfo{
             .descriptor_pool = descriptor_pool,
             .descriptor_set_count = 1,
-            .p_set_layouts = @ptrCast(&descriptor_set_layout),
+            .p_set_layouts = @ptrCast(&self.descriptor_set_layout),
         };
         _ = try gc.dev.allocateDescriptorSets(&alloc_info, @ptrCast(&self.descriptor_set));
 
@@ -400,7 +419,7 @@ pub const GraphicsPipeline = struct {
         self.pipeline_layout = try gc.dev.createPipelineLayout(&.{
             .flags = .{},
             .set_layout_count = 1,
-            .p_set_layouts = @ptrCast(&descriptor_set_layout),
+            .p_set_layouts = @ptrCast(&self.descriptor_set_layout),
             .push_constant_range_count = 0,
             .p_push_constant_ranges = undefined,
         }, null);
@@ -538,6 +557,7 @@ pub const GraphicsPipeline = struct {
     }
 
     fn deinitPipeline(self: *const Self, gc: *const GraphicsContext) void {
+        gc.dev.destroyDescriptorSetLayout(self.descriptor_set_layout, null);
         gc.dev.destroyPipeline(self.handle, null);
         gc.dev.destroyPipelineLayout(self.pipeline_layout, null);
     }

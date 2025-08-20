@@ -68,45 +68,7 @@ pub const ComputePipeline = struct {
         };
         _ = try gc.dev.allocateDescriptorSets(&alloc_info, @ptrCast(&self.descriptor_set));
 
-        const descriptor_writes = [_]vk.WriteDescriptorSet{
-            .{
-                .dst_set = self.descriptor_set[0],
-                .dst_binding = 0,
-                .dst_array_element = 0,
-                .descriptor_count = 1,
-                .descriptor_type = .storage_image,
-                .p_image_info = @ptrCast(&[_]vk.DescriptorImageInfo{storage_image.descriptor}),
-                .p_buffer_info = @ptrCast(&[_]vk.DescriptorBufferInfo{}),
-                .p_texel_buffer_view = @ptrCast(&[_]vk.BufferView{}),
-            },
-            .{
-                .dst_set = self.descriptor_set[0],
-                .dst_binding = 1,
-                .dst_array_element = 0,
-                .descriptor_count = 1,
-                .descriptor_type = .uniform_buffer,
-                .p_image_info = @ptrCast(&[_]vk.DescriptorImageInfo{}),
-                .p_buffer_info = @ptrCast(&[_]vk.DescriptorBufferInfo{uniform_buffer.descriptor}),
-                .p_texel_buffer_view = @ptrCast(&[_]vk.BufferView{}),
-            },
-            .{
-                .dst_set = self.descriptor_set[0],
-                .dst_binding = 2,
-                .dst_array_element = 0,
-                .descriptor_count = 1,
-                .descriptor_type = .storage_buffer,
-                .p_image_info = @ptrCast(&[_]vk.DescriptorImageInfo{}),
-                .p_buffer_info = @ptrCast(&[_]vk.DescriptorBufferInfo{storage_buffer.descriptor}),
-                .p_texel_buffer_view = @ptrCast(&[_]vk.BufferView{}),
-            },
-        };
-
-        gc.dev.updateDescriptorSets(
-            @intCast(descriptor_writes.len),
-            @ptrCast(&descriptor_writes),
-            0,
-            null,
-        );
+        try self.updateDescriptorSet(gc, storage_image, storage_buffer, uniform_buffer);
 
         self.pipeline_layout = try gc.dev.createPipelineLayout(&.{
             .set_layout_count = 1,
@@ -157,6 +119,54 @@ pub const ComputePipeline = struct {
 
         try self.buildComputeCommandBuffer(gc, storage_image, extent);
         return self;
+    }
+
+    pub fn updateDescriptorSet(
+        self: *Self,
+        gc: *const GraphicsContext,
+        storage_image: StorageImage,
+        storage_buffer: Buffer,
+        uniform_buffer: Buffer,
+    ) !void {
+        const descriptor_writes = [_]vk.WriteDescriptorSet{
+            .{
+                .dst_set = self.descriptor_set[0],
+                .dst_binding = 0,
+                .dst_array_element = 0,
+                .descriptor_count = 1,
+                .descriptor_type = .storage_image,
+                .p_image_info = @ptrCast(&[_]vk.DescriptorImageInfo{storage_image.descriptor}),
+                .p_buffer_info = @ptrCast(&[_]vk.DescriptorBufferInfo{}),
+                .p_texel_buffer_view = @ptrCast(&[_]vk.BufferView{}),
+            },
+            .{
+                .dst_set = self.descriptor_set[0],
+                .dst_binding = 1,
+                .dst_array_element = 0,
+                .descriptor_count = 1,
+                .descriptor_type = .uniform_buffer,
+                .p_image_info = @ptrCast(&[_]vk.DescriptorImageInfo{}),
+                .p_buffer_info = @ptrCast(&[_]vk.DescriptorBufferInfo{uniform_buffer.descriptor}),
+                .p_texel_buffer_view = @ptrCast(&[_]vk.BufferView{}),
+            },
+            .{
+                .dst_set = self.descriptor_set[0],
+                .dst_binding = 2,
+                .dst_array_element = 0,
+                .descriptor_count = 1,
+                .descriptor_type = .storage_buffer,
+                .p_image_info = @ptrCast(&[_]vk.DescriptorImageInfo{}),
+                .p_buffer_info = @ptrCast(&[_]vk.DescriptorBufferInfo{storage_buffer.descriptor}),
+                .p_texel_buffer_view = @ptrCast(&[_]vk.BufferView{}),
+            },
+        };
+
+        gc.dev.updateDescriptorSets(
+            @intCast(descriptor_writes.len),
+            @ptrCast(&descriptor_writes),
+            0,
+            null,
+        );
     }
 
     pub fn deinit(self: *const Self, gc: *const GraphicsContext) void {
