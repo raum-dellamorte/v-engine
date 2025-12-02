@@ -438,16 +438,16 @@ pub const GraphicsPipeline = struct {
 
         const piasci = vk.PipelineInputAssemblyStateCreateInfo{
             .topology = .triangle_list,
-            .primitive_restart_enable = vk.FALSE,
+            .primitive_restart_enable = .false,
         };
 
         const prsci = vk.PipelineRasterizationStateCreateInfo{
-            .depth_clamp_enable = vk.FALSE,
-            .rasterizer_discard_enable = vk.FALSE,
+            .depth_clamp_enable = .false,
+            .rasterizer_discard_enable = .false,
             .polygon_mode = .fill,
             .cull_mode = .{ .front_bit = true },
             .front_face = .counter_clockwise,
-            .depth_bias_enable = vk.FALSE,
+            .depth_bias_enable = .false,
             .depth_bias_constant_factor = 0,
             .depth_bias_clamp = 0,
             .depth_bias_slope_factor = 0,
@@ -455,7 +455,7 @@ pub const GraphicsPipeline = struct {
         };
 
         const pcbas = vk.PipelineColorBlendAttachmentState{
-            .blend_enable = vk.FALSE,
+            .blend_enable = .false,
             .src_color_blend_factor = .one,
             .dst_color_blend_factor = .zero,
             .color_blend_op = .add,
@@ -466,7 +466,7 @@ pub const GraphicsPipeline = struct {
         };
 
         const pcbsci = vk.PipelineColorBlendStateCreateInfo{
-            .logic_op_enable = vk.FALSE,
+            .logic_op_enable = .false,
             .logic_op = .copy,
             .attachment_count = 1,
             .p_attachments = @ptrCast(&pcbas),
@@ -474,11 +474,11 @@ pub const GraphicsPipeline = struct {
         };
 
         const pdssci = vk.PipelineDepthStencilStateCreateInfo{
-            .depth_test_enable = vk.FALSE,
-            .depth_write_enable = vk.FALSE,
+            .depth_test_enable = .false,
+            .depth_write_enable = .false,
             .depth_compare_op = .less_or_equal,
-            .depth_bounds_test_enable = vk.FALSE,
-            .stencil_test_enable = vk.FALSE,
+            .depth_bounds_test_enable = .false,
+            .stencil_test_enable = .false,
             .front = undefined,
             .back = .{
                 .compare_op = .always,
@@ -502,10 +502,10 @@ pub const GraphicsPipeline = struct {
 
         const pmsci = vk.PipelineMultisampleStateCreateInfo{
             .rasterization_samples = .{ .@"1_bit" = true },
-            .sample_shading_enable = vk.FALSE,
+            .sample_shading_enable = .false,
             .min_sample_shading = 1,
-            .alpha_to_coverage_enable = vk.FALSE,
-            .alpha_to_one_enable = vk.FALSE,
+            .alpha_to_coverage_enable = .false,
+            .alpha_to_one_enable = .false,
         };
 
         const dynstate = [_]vk.DynamicState{ .viewport, .scissor };

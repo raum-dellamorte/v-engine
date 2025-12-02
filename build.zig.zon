@@ -28,7 +28,7 @@
 
     // Tracks the earliest Zig version that the package considers to be a
     // supported use case.
-    .minimum_zig_version = "0.14.0",
+    .minimum_zig_version = "0.15.1",
 
     // This field is optional.
     // Each dependency must either provide a `url` and `hash`, or a `path`.
@@ -37,12 +37,16 @@
     // internet connectivity.
     .dependencies = .{
         .zglfw = .{
-            .url = "git+https://github.com/MrVicarius/zglfw.git#fe1751bf2554f560626b5c5d6dad93f94f616134",
-            .hash = "zglfw-0.1.0-BghZXYzSAAAC5BEWvJEfbYh0wghl9ePUIbB2wr8seqoE",
+            .url = "git+https://github.com/IridescenceTech/zglfw.git#e05188a71db6053ec56bba83a27fb736a26562ce",
+            .hash = "zglfw-0.1.0-BghZXabUAACfsXVTPWvmy44XLsc-wux2G9w8Mbp523pJ",
+        },
+        .glfw_zig = .{
+            .url = "git+https://github.com/tiawl/glfw.zig.git#bf43f4bf3b2feb20a5b7f19762b25dbc42d85bd0",
+            .hash = "glfw_zig-1.0.0-NrvYo8bXGQDNplF8UkNbZbjoTEXXwSu7aKICMnlJiuhl",
         },
         .vulkan = .{
-            .url = "git+https://github.com/Snektron/vulkan-zig.git#2846d415d8c9f96c1675944d0762745422fe7aa0",
-            .hash = "vulkan-0.0.0-r7Ytx25WAwBqA-Qx5n7Hj1yZFEo_IwctejwitvrfL1k5",
+            .url = "https://github.com/Snektron/vulkan-zig/archive/refs/heads/zig-0.15-compat.zip",
+            .hash = "vulkan-0.0.0-r7Ytx_VDAwAiMl0YSu2UOkVMIGJN7CeIQaxJR-hUSfD6",
         },
     },
     .paths = .{

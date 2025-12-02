@@ -120,7 +120,7 @@ pub const App = struct {
         _ = try self.gc.dev.waitForFences(
             1,
             @ptrCast(&self.compute_pipeline.fence),
-            1,
+            .true,
             std.math.maxInt(u64),
         );
         try self.gc.dev.resetFences(1, @ptrCast(&self.compute_pipeline.fence));

@@ -32,11 +32,15 @@ pub fn build(b: *std.Build) void {
     });
     exe.root_module.addImport("vulkan", vulkan.module("vulkan-zig"));
     if (builtin.target.os.tag == .macos) {
-        exe.addLibraryPath(.{ .cwd_relative = "/usr/local/lib" });
+        exe.root_module.addLibraryPath(.{ .cwd_relative = "/usr/local/lib" });
     } else if (builtin.target.os.tag == .windows) {
-        exe.addLibraryPath(.{ .cwd_relative = "C:/glfw/lib-vc2022/" });
+        exe.root_module.addLibraryPath(.{ .cwd_relative = "C:/glfw/lib-vc2022/" });
         //exe.addLibraryPath(.{ .cwd_relative = "C:/Vulkan/vulkan-sdk/lib" });
+    } else {
+        exe.root_module.addLibraryPath(.{ .cwd_relative = "/usr/lib" });
     }
+    exe.root_module.linkSystemLibrary("glfw3", .{}); // I don't know if this works on Windows
+    exe.root_module.link_libc = true;
 
     b.installArtifact(exe);
 

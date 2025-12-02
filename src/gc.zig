@@ -41,7 +41,7 @@ pub const GraphicsContext = struct {
         self.allocator = allocator;
         self.vkb = BaseWrapper.load(glfwGetInstanceProcAddress);
 
-        var extension_names = std.ArrayList([*:0]const u8).init(allocator);
+        var extension_names = std.array_list.Managed([*:0]const u8).init(allocator);
         defer extension_names.deinit();
         // these extensions are to support vulkan in mac os
         // see https://github.com/glfw/glfw/issues/2335
@@ -148,7 +148,7 @@ pub const GraphicsContext = struct {
 
         try self.dev.queueSubmit(queue.handle, 1, @ptrCast(&submit_info), fence);
 
-        _ = try self.dev.waitForFences(1, @ptrCast(&fence), 1, DEFAULT_FENCE_TIMEOUT);
+        _ = try self.dev.waitForFences(1, @ptrCast(&fence), .true, DEFAULT_FENCE_TIMEOUT);
 
         if (free) {
             self.dev.freeCommandBuffers(pool, 1, @ptrCast(&cmd));
@@ -304,7 +304,7 @@ fn allocateQueues(instance: Instance, pdev: vk.PhysicalDevice, allocator: Alloca
             compute_family = family;
         }
 
-        if (present_family == null and (try instance.getPhysicalDeviceSurfaceSupportKHR(pdev, family, surface)) == vk.TRUE) {
+        if (present_family == null and (try instance.getPhysicalDeviceSurfaceSupportKHR(pdev, family, surface)) == .true) {
             present_family = family;
         }
     }

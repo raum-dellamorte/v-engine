@@ -115,14 +115,14 @@ pub const StorageImage = struct {
             .address_mode_v = .clamp_to_border,
             .address_mode_w = .clamp_to_border,
             .mip_lod_bias = 0.0,
-            .anisotropy_enable = 0,
+            .anisotropy_enable = .false,
             .max_anisotropy = 1.0,
             .compare_op = .never,
-            .compare_enable = 0,
+            .compare_enable = .false,
             .min_lod = 0.0,
             .max_lod = 0.0,
             .border_color = .float_opaque_white,
-            .unnormalized_coordinates = 0,
+            .unnormalized_coordinates = .false,
         };
         self.sampler = try gc.dev.createSampler(&sampler_create_info, null);
 
