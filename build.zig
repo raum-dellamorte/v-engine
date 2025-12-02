@@ -36,8 +36,6 @@ pub fn build(b: *std.Build) void {
     } else if (builtin.target.os.tag == .windows) {
         exe.root_module.addLibraryPath(.{ .cwd_relative = "C:/glfw/lib-vc2022/" });
         //exe.addLibraryPath(.{ .cwd_relative = "C:/Vulkan/vulkan-sdk/lib" });
-    } else {
-        exe.root_module.addLibraryPath(.{ .cwd_relative = "/usr/lib" });
     }
     exe.root_module.linkSystemLibrary("glfw3", .{}); // I don't know if this works on Windows
     exe.root_module.link_libc = true;
